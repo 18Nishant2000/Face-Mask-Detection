@@ -16,19 +16,18 @@ cap = cv2.VideoCapture(0)
 model = load_model('saved_model2')
 size = (100, 100)
 
-while True:
-    _ , img = cap.read()
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.1, 2)
+def face(gray):
+    faces = face_cascade.detectMultiScale(gray, 1.3, 2)
     for (x, y, w, h) in faces:
-        cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 2)
-    
-    img1 = []
-    temp = cv2.resize(gray, size)
-    img1.append(temp)
-    img1 = np.array(img1)
-    # img1 = img1/255
-    img1 = img1.reshape(len(img1), 100, 100, 1)
+            cv2.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            x -= 50
+            y -= 50
+            w += 100
+            h += 100
+            face = gray[y:h,x:w]
+            return face
+
+def prediction(img1):
     pred = model.predict(img1)
     result = ''
     print(pred)
@@ -37,11 +36,29 @@ while True:
             result = 'With Mask'
         else:
             result = 'Without Mask'
+    return result
+
+
+while True:
+    img1 = []        
     
-    cv2.putText(img, result, size, cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
-    cv2.imshow('img', img)
-        
-    k = cv2.waitKey(30) & 0xff
-    if k == 27:
+    _ , img = cap.read()
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    
+    gray = face(gray)
+    try:
+        temp = cv2.resize(gray, size)
+        img1.append(temp)
+        img1 = np.array(img1)
+        img1 = img1.reshape(len(img1), 100, 100, 1)
+        cv2.putText(img, prediction(img1), size, cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+        cv2.imshow('Face Mask Deection', img)
+    except Exception as e:
+        cv2.imshow('Face Mask Deection', img)
+
+    if cv2.waitKey(1) == 13:
+        cv2.destroyAllWindows()
         break
+
+    
 cap.release()
